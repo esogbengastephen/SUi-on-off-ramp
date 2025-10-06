@@ -1,0 +1,52 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read/write access to transactions collection
+    match /transactions/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to users collection
+    match /users/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to payments collection
+    match /payments/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to auditLogs collection
+    match /auditLogs/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to systemHealth collection
+    match /systemHealth/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to adminSettings collection
+    match /adminSettings/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to treasuryBalances collection
+    match /treasuryBalances/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Allow read/write access to treasuryTransactions collection
+    match /treasuryTransactions/{document} {
+      allow read, write: if true; // Temporarily allow all access for development
+    }
+    
+    // Default rule - deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+
