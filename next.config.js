@@ -1,10 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Disable static optimization for problematic pages during build
-  experimental: {
-    // Skip static generation for pages that might cause build issues
-    skipTrailingSlashRedirect: true,
-  },
+  // Skip trailing slash redirects
+  skipTrailingSlashRedirect: true,
   
   // Reduce build timeouts and improve reliability
   typescript: {
@@ -16,9 +13,6 @@ const nextConfig = {
     // Skip ESLint during build
     ignoreDuringBuilds: true,
   },
-  
-  // Optimize for production builds
-  swcMinify: true,
   
   // Handle environment variables
   env: {
