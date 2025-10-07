@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useCurrentWallet, useSignAndExecuteTransaction } from '@mysten/dapp-kit'
-import { suiSwapContract, SwapTransaction, ContractState } from '@/lib/sui-contract'
+import { suiSwapContract, SwapTransaction, ContractState } from '../lib/sui-contract'
 import { toast } from 'sonner'
 
 // Contract interaction hook
