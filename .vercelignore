@@ -8,6 +8,7 @@ yarn-error.log*
 .next
 out
 dist
+build
 
 # Environment files
 .env.local
@@ -102,5 +103,37 @@ contracts/
 *.move
 *.sh
 
-# Sui CLI files
+# Sui CLI files and binaries
 .sui/
+sui
+sui-*
+sui-debug
+sui-testnet-*
+sui-node
+sui-tool
+sui-graphql-rpc
+sui-bridge
+sui-data-ingestion
+sui-bridge-cli
+
+# Git files
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Development files
+scripts/
+docs/
+examples/
