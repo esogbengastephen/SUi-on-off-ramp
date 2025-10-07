@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminDb, ADMIN_COLLECTIONS } from '@/lib/firebase-admin';
 import { updateDoc, doc } from 'firebase-admin/firestore';
-import { creditTokensServerSide } from '@/hooks/useTokenCrediting';
+import { creditTokensServerSide } from '@/lib/server-token-crediting';
 
 export async function POST(request: NextRequest) {
   try {
