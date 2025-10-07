@@ -121,3 +121,4 @@ complete-env-local.txt
 final-env-local.txt
 updated-env-local.txt
 firebase-config-sample.txt
+.vercel
