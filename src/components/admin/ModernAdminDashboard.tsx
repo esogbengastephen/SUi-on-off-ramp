@@ -51,6 +51,7 @@ import {
   useSystemAlerts,
   useAdminSettings
 } from "@/hooks/useFirebaseAdmin";
+import { useRealDashboardData } from "@/hooks/useRealDashboardData";
 import TreasuryDashboard from "./TreasuryDashboard";
 import UserManagement from "./UserManagement";
 import AnalyticsDashboard from "./AnalyticsDashboard";
@@ -58,6 +59,11 @@ import SystemHealth from "./SystemHealth";
 import AdminManagement from "./AdminManagement";
 import AdvancedTransactionManagement from "./AdvancedTransactionManagement";
 import EmergencyControls from "./EmergencyControls";
+import TransactionLimitsManagement from "./TransactionLimitsManagement";
+import EnhancedAdminDashboard from "./EnhancedAdminDashboard";
+import FirebaseAdminDashboard from "./FirebaseAdminDashboard";
+import { TransactionHistory } from "./TransactionHistory";
+import TreasuryManagement from "./TreasuryManagement";
 
 // Treasury Health Score Component (similar to Risk Score)
 interface TreasuryHealthScoreProps {
@@ -305,7 +311,20 @@ function TransactionRow({ transaction, onSelect, isSelected }: TransactionRowPro
 }
 
 // Main Dashboard Component
-export default function ModernAdminDashboard() {
+interface ModernAdminDashboardProps {
+  adminFunctions?: {
+    confirmOnRampPayment: any;
+    completeOffRamp: any;
+    pauseContract: () => Promise<void>;
+    unpauseContract: () => Promise<void>;
+    updateExchangeRate: () => Promise<void>;
+    isLoading: boolean;
+    newExchangeRate: string;
+    setNewExchangeRate: (value: string) => void;
+  };
+}
+
+export default function ModernAdminDashboard({ adminFunctions }: ModernAdminDashboardProps) {
   const { currentWallet } = useCurrentWallet();
   const [selectedTab, setSelectedTab] = useState("overview");
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -321,6 +340,9 @@ export default function ModernAdminDashboard() {
   const { analytics } = useDailyAnalytics();
   const { alerts: systemAlerts, unresolvedCount } = useSystemAlerts();
 
+  // Real dashboard data
+  const { treasuryData, userData, transactionData, loading: realDataLoading, refresh: refreshRealData } = useRealDashboardData();
+
   // Check if user is admin
   const isAdmin = currentWallet?.accounts?.[0]?.address === "0x84716bc5b17eafc9efe7dd18cc62896808ec7725c13caf598da166a262710580";
 
@@ -335,19 +357,14 @@ export default function ModernAdminDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Real treasury data from Firebase
-  const treasuryData = latestSnapshot || {
-    balances: {},
-    healthScore: 0,
-    totalValueUSD: 0,
-    totalValueNGN: 0
-  };
+  // Use real treasury data instead of Firebase snapshot
+  const realTreasuryData = treasuryData;
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      // Refresh all data
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Refresh real data
+      await refreshRealData();
       toast.success('Dashboard refreshed successfully');
     } catch (error) {
       toast.error('Failed to refresh dashboard');
@@ -442,7 +459,7 @@ export default function ModernAdminDashboard() {
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="bg-slate-800/50 border-slate-700 mb-8">
+          <TabsList className="bg-slate-800/50 border-slate-700 mb-8 grid grid-cols-11">
             <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700">
               Overview
             </TabsTrigger>
@@ -461,11 +478,20 @@ export default function ModernAdminDashboard() {
             <TabsTrigger value="system" className="data-[state=active]:bg-slate-700">
               System
             </TabsTrigger>
-            <TabsTrigger value="admins" className="data-[state=active]:bg-slate-700">
-              Admins
+            <TabsTrigger value="contract" className="data-[state=active]:bg-slate-700">
+              Contract
+            </TabsTrigger>
+            <TabsTrigger value="limits" className="data-[state=active]:bg-slate-700">
+              Limits
             </TabsTrigger>
             <TabsTrigger value="emergency" className="data-[state=active]:bg-slate-700">
               Emergency
+            </TabsTrigger>
+            <TabsTrigger value="enhanced" className="data-[state=active]:bg-slate-700">
+              Enhanced
+            </TabsTrigger>
+            <TabsTrigger value="firebase" className="data-[state=active]:bg-slate-700">
+              Firebase
             </TabsTrigger>
           </TabsList>
 
@@ -475,7 +501,7 @@ export default function ModernAdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <MetricCard
                 title="Total Treasury Value"
-                value={`$${treasuryData.totalValueUSD?.toLocaleString()}`}
+                value={`$${realTreasuryData.totalValueUSD.toFixed(2)}`}
                 change="+12.5%"
                 changeType="positive"
                 icon={<DollarSign className="h-6 w-6 text-white" />}
@@ -483,7 +509,7 @@ export default function ModernAdminDashboard() {
               />
               <MetricCard
                 title="Active Users"
-                value={profiles.length}
+                value={userData.activeUsers}
                 change="+8.2%"
                 changeType="positive"
                 icon={<Users className="h-6 w-6 text-white" />}
@@ -491,7 +517,7 @@ export default function ModernAdminDashboard() {
               />
               <MetricCard
                 title="Daily Volume"
-                value="₦2.5M"
+                value={`₦${(transactionData.dailyVolume / 1000000).toFixed(1)}M`}
                 change="+15.3%"
                 changeType="positive"
                 icon={<TrendingUp className="h-6 w-6 text-white" />}
@@ -499,7 +525,7 @@ export default function ModernAdminDashboard() {
               />
               <MetricCard
                 title="System Health"
-                value="98.5%"
+                value={`${realTreasuryData.healthScore.toFixed(1)}%`}
                 change="+0.2%"
                 changeType="positive"
                 icon={<Activity className="h-6 w-6 text-white" />}
@@ -521,7 +547,7 @@ export default function ModernAdminDashboard() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
-                  <TreasuryHealthScore score={treasuryData.healthScore || 78} />
+                  <TreasuryHealthScore score={realTreasuryData.healthScore} />
                 </CardContent>
               </Card>
 
@@ -611,12 +637,111 @@ export default function ModernAdminDashboard() {
             <SystemHealth />
           </TabsContent>
 
-          <TabsContent value="admins" className="space-y-6">
-            <AdminManagement />
+          <TabsContent value="contract" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-white">Contract Control</CardTitle>
+                  <CardDescription className="text-slate-400">Pause or unpause the swap contract</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Button
+                    onClick={adminFunctions?.pauseContract}
+                    disabled={adminFunctions?.isLoading}
+                    variant="destructive"
+                    className="w-full"
+                  >
+                    Pause Contract
+                  </Button>
+                  <Button
+                    onClick={adminFunctions?.unpauseContract}
+                    disabled={adminFunctions?.isLoading}
+                    variant="default"
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    Unpause Contract
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-white">Exchange Rate</CardTitle>
+                  <CardDescription className="text-slate-400">Update the SUI to Naira exchange rate</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="exchange-rate" className="text-slate-300">New Exchange Rate (NGN per SUI)</Label>
+                    <Input
+                      id="exchange-rate"
+                      type="number"
+                      placeholder="e.g., 3000"
+                      value={adminFunctions?.newExchangeRate || ""}
+                      onChange={(e) => adminFunctions?.setNewExchangeRate(e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  <Button
+                    onClick={adminFunctions?.updateExchangeRate}
+                    disabled={adminFunctions?.isLoading || !adminFunctions?.newExchangeRate}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    Update Rate
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-white">System Configuration</CardTitle>
+                <CardDescription className="text-slate-400">Current system parameters and settings</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-slate-300">Contract ID</Label>
+                    <Input 
+                      value={process.env.NEXT_PUBLIC_SWAP_CONTRACT_ID || ""} 
+                      readOnly 
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Treasury ID</Label>
+                    <Input 
+                      value={process.env.NEXT_PUBLIC_TREASURY_ID || ""} 
+                      readOnly 
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Admin Cap ID</Label>
+                    <Input 
+                      value={process.env.NEXT_PUBLIC_ADMIN_CAP_ID || ""} 
+                      readOnly 
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="limits" className="space-y-6">
+            <TransactionLimitsManagement />
           </TabsContent>
 
           <TabsContent value="emergency" className="space-y-6">
             <EmergencyControls />
+          </TabsContent>
+
+          <TabsContent value="enhanced" className="space-y-6">
+            <EnhancedAdminDashboard />
+          </TabsContent>
+
+          <TabsContent value="firebase" className="space-y-6">
+            <FirebaseAdminDashboard />
           </TabsContent>
         </Tabs>
       </div>

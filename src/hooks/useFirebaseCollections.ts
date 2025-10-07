@@ -49,8 +49,6 @@ export interface FirebaseUser {
   walletAddress: string;
   email?: string;
   phone?: string;
-  kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
-  kycData?: any;
   role?: 'user' | 'admin';
   createdAt: Date;
   updatedAt: Date;

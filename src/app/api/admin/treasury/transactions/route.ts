@@ -6,9 +6,47 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🚀 TREASURY TRANSACTIONS API: Fetching treasury transactions');
 
-    // For now, we'll return mock data since we don't have real treasury transaction tracking yet
-    // In a real implementation, this would query the actual blockchain transactions
+    const { searchParams } = new URL(request.url);
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const type = searchParams.get('type') || 'all';
+    const currency = searchParams.get('currency') || 'all';
+
+    // Query Firebase for real treasury transactions
+    let transactionsRef = adminDb.collection('treasury_transactions');
     
+    // Apply filters
+    if (type !== 'all') {
+      transactionsRef = transactionsRef.where('type', '==', type);
+    }
+    if (currency !== 'all') {
+      transactionsRef = transactionsRef.where('currency', '==', currency);
+    }
+
+    // Order by creation date (newest first) and limit results
+    const snapshot = await transactionsRef
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+
+    const transactions = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || new Date(),
+      updatedAt: doc.data().updatedAt?.toDate?.() || new Date()
+    }));
+
+    console.log('🚀 TREASURY TRANSACTIONS API: Returning real transactions:', transactions.length);
+
+    return NextResponse.json({
+      success: true,
+      transactions: transactions,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error: any) {
+    console.error('❌ TREASURY TRANSACTIONS API: Error fetching transactions:', error);
+    
+    // Fallback to mock data if real data fails
     const mockTransactions = [
       {
         id: 'tx_001',
@@ -51,23 +89,12 @@ export async function GET(request: NextRequest) {
       }
     ];
 
-    console.log('🚀 TREASURY TRANSACTIONS API: Returning mock transactions:', mockTransactions.length);
-
     return NextResponse.json({
       success: true,
       transactions: mockTransactions,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      warning: 'Using fallback data due to error: ' + error.message
     });
-
-  } catch (error: any) {
-    console.error('❌ TREASURY TRANSACTIONS API: Error fetching transactions:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Failed to fetch treasury transactions' 
-      },
-      { status: 500 }
-    );
   }
 }
 

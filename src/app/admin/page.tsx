@@ -1,13 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useCurrentWallet } from "@mysten/dapp-kit"
 import { ConnectButton } from "@mysten/dapp-kit"
-import EnhancedAdminDashboard from "@/components/admin/EnhancedAdminDashboard"
-import FirebaseAdminDashboard from "@/components/admin/FirebaseAdminDashboard"
-import { TransactionHistory } from "@/components/admin/TransactionHistory"
-import TreasuryManagement from "@/components/admin/TreasuryManagement"
 import ModernAdminDashboard from "@/components/admin/ModernAdminDashboard"
 import { useAdminFunctions } from "@/hooks/useSuiContract"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,10 +25,16 @@ export default function AdminDashboard() {
 
   // State for admin actions
   const [newExchangeRate, setNewExchangeRate] = useState("")
-  const [selectedTab, setSelectedTab] = useState("modern")
 
   // Check if user is admin - using the wallet that deployed the contract
-  const isAdmin = currentWallet?.accounts?.[0]?.address === "0x84716bc5b17eafc9efe7dd18cc62896808ec7725c13caf598da166a262710580"
+  // You can add multiple admin addresses here
+  const adminAddresses = [
+    "0x84716bc5b17eafc9efe7dd18cc62896808ec7725c13caf598da166a262710580", // Original admin
+    // Add more admin addresses as needed
+  ];
+  
+  const isAdmin = currentWallet?.accounts?.[0]?.address && 
+    adminAddresses.includes(currentWallet.accounts[0].address);
 
   if (!isAdmin) {
     return (
@@ -115,111 +116,19 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="modern">Modern Dashboard</TabsTrigger>
-          <TabsTrigger value="enhanced">Enhanced Dashboard</TabsTrigger>
-          <TabsTrigger value="firebase">Firebase Dashboard</TabsTrigger>
-          <TabsTrigger value="legacy">Legacy Dashboard</TabsTrigger>
-          <TabsTrigger value="treasury">Treasury Management</TabsTrigger>
-          <TabsTrigger value="contract">Contract Management</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="modern" className="space-y-6">
-          <ModernAdminDashboard />
-        </TabsContent>
-
-        <TabsContent value="enhanced" className="space-y-6">
-          <EnhancedAdminDashboard />
-        </TabsContent>
-
-        <TabsContent value="firebase" className="space-y-6">
-          <FirebaseAdminDashboard />
-        </TabsContent>
-
-        <TabsContent value="legacy" className="space-y-6">
-          <TransactionHistory isAdmin={isAdmin} />
-        </TabsContent>
-
-        <TabsContent value="treasury" className="space-y-6">
-          <TreasuryManagement />
-        </TabsContent>
-
-        <TabsContent value="contract" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Contract Control</CardTitle>
-                <CardDescription>Pause or unpause the swap contract</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button
-                  onClick={handlePauseContract}
-                  disabled={adminLoading}
-                  variant="destructive"
-                >
-                  Pause Contract
-                </Button>
-                <Button
-                  onClick={handleUnpauseContract}
-                  disabled={adminLoading}
-                  variant="default"
-                >
-                  Unpause Contract
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Exchange Rate</CardTitle>
-                <CardDescription>Update the SUI to Naira exchange rate</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="exchange-rate">New Exchange Rate (NGN per SUI)</Label>
-                  <Input
-                    id="exchange-rate"
-                    type="number"
-                    placeholder="e.g., 3000"
-                    value={newExchangeRate}
-                    onChange={(e) => setNewExchangeRate(e.target.value)}
-                  />
-                </div>
-                <Button
-                  onClick={handleUpdateExchangeRate}
-                  disabled={adminLoading || !newExchangeRate}
-                >
-                  Update Rate
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>System Configuration</CardTitle>
-              <CardDescription>Current system parameters and settings</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label>Contract ID</Label>
-                  <Input value={process.env.NEXT_PUBLIC_SWAP_CONTRACT_ID || ""} readOnly />
-                </div>
-                <div>
-                  <Label>Treasury ID</Label>
-                  <Input value={process.env.NEXT_PUBLIC_TREASURY_ID || ""} readOnly />
-                </div>
-                <div>
-                  <Label>Admin Cap ID</Label>
-                  <Input value={process.env.NEXT_PUBLIC_ADMIN_CAP_ID || ""} readOnly />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Modern Dashboard with all functionality as tabs */}
+      <ModernAdminDashboard 
+        adminFunctions={{
+          confirmOnRampPayment,
+          completeOffRamp,
+          pauseContract: handlePauseContract,
+          unpauseContract: handleUnpauseContract,
+          updateExchangeRate: handleUpdateExchangeRate,
+          isLoading: adminLoading,
+          newExchangeRate,
+          setNewExchangeRate
+        }}
+      />
     </div>
   )
 }
