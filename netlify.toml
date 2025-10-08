@@ -6,7 +6,6 @@
   NODE_VERSION = "20"
   NEXT_TELEMETRY_DISABLED = "1"
   NETLIFY = "true"
-  NODE_ENV = "production"
 
 [[redirects]]
   from = "/*"
