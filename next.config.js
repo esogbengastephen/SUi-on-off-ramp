@@ -36,8 +36,25 @@ const nextConfig = {
     return config;
   },
   
-  // Removed redirect to allow users to see the landing page
-  // Users will be redirected to /swap via the landing page logic instead
+  // Add experimental features to handle build issues
+  experimental: {
+    // Increase timeout for static page generation
+    staticPageGenerationTimeout: 1000,
+  },
+  
+  // Configure build output for better deployment
+  output: 'standalone',
+  
+  // Disable image optimization during build to prevent timeouts
+  images: {
+    unoptimized: true,
+  },
+  
+  // Configure static generation
+  trailingSlash: false,
+  
+  // Disable source maps in production for faster builds
+  productionBrowserSourceMaps: false,
 };
 
 module.exports = nextConfig;

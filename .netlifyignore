@@ -29,3 +29,19 @@ Thumbs.db
 .next/cache/
 .next/static/
 node_modules/
+
+# Ignore test files
+**/*.test.*
+**/*.spec.*
+**/__tests__/
+**/test/
+**/tests/
+
+# Ignore documentation files
+*.md
+docs/
+README*
+
+# Ignore development scripts
+scripts/
+*.sh
