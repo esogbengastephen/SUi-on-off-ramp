@@ -16,16 +16,18 @@ const firebaseConfig = {
   })
 };
 
-// Debug: Log Firebase configuration (remove in production)
-console.log('🔧 Firebase Config Debug:', {
-  apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
-  authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
-  projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
-  storageBucket: firebaseConfig.storageBucket ? '✅ Set' : '❌ Missing',
-  messagingSenderId: firebaseConfig.messagingSenderId ? '✅ Set' : '❌ Missing',
-  appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
-  measurementId: firebaseConfig.measurementId ? '✅ Set' : '⚠️ Optional (not set)'
-});
+// Firebase configuration validation (silent in production)
+if (process.env.NODE_ENV !== 'production') {
+  console.log('🔧 Firebase Config Debug:', {
+    apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
+    authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
+    projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
+    storageBucket: firebaseConfig.storageBucket ? '✅ Set' : '❌ Missing',
+    messagingSenderId: firebaseConfig.messagingSenderId ? '✅ Set' : '❌ Missing',
+    appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
+    measurementId: firebaseConfig.measurementId ? '✅ Set' : '⚠️ Optional (not set)'
+  });
+}
 
 // Validate Firebase configuration
 const validateConfig = () => {

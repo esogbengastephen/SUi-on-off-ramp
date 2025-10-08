@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid token symbol' }, { status: 400 })
   }
 
-  // During build time, return fallback data immediately to avoid timeouts
-  if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
+  // During build time or production, return fallback data immediately to avoid timeouts
+  if (process.env.NODE_ENV === 'production' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
     const fallbackPrices = {
       SUI: { price: 3000, change24h: 0 },
       USDC: { price: 1500, change24h: 0 },

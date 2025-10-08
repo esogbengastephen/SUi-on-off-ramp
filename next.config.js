@@ -3,6 +3,9 @@ const nextConfig = {
   // Skip trailing slash redirects
   skipTrailingSlashRedirect: true,
   
+  // Fix workspace root detection
+  outputFileTracingRoot: process.cwd(),
+  
   // Reduce build timeouts and improve reliability
   typescript: {
     // Skip type checking during build to speed up deployment
@@ -17,6 +20,7 @@ const nextConfig = {
   // Handle environment variables
   env: {
     NETLIFY: process.env.NETLIFY || 'false',
+    VERCEL: process.env.VERCEL || 'false',
   },
   
   // Reduce bundle size
