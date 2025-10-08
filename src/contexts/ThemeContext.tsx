@@ -32,6 +32,11 @@ export function ThemeProvider({
   defaultTheme = 'system',
   storageKey = 'switcherfi-theme'
 }: ThemeProviderProps) {
+  // During build time, render children without theme context to avoid SSR issues
+  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true') {
+    return <>{children}</>;
+  }
+
   const [theme, setTheme] = useState<Theme>(defaultTheme)
   const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
 

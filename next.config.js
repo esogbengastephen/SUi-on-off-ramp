@@ -38,8 +38,7 @@ const nextConfig = {
   
   // Add experimental features to handle build issues
   experimental: {
-    // Increase timeout for static page generation
-    staticPageGenerationTimeout: 1000,
+    // Remove experimental options that might cause issues
   },
   
   // Configure build output for better deployment
