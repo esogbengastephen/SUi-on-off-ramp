@@ -36,16 +36,8 @@ const nextConfig = {
     return config;
   },
   
-  // Handle redirects
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/swap',
-        permanent: false,
-      },
-    ];
-  },
+  // Removed redirect to allow users to see the landing page
+  // Users will be redirected to /swap via the landing page logic instead
 };
 
 module.exports = nextConfig;
