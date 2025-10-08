@@ -37,7 +37,7 @@ const validateConfig = () => {
   if (missingKeys.length > 0) {
     console.error('Missing Firebase configuration keys:', missingKeys);
     // During build time, don't throw error - return null instead
-    if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
+    if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
       console.log('Build-time Firebase initialization skipped due to missing config');
       return null;
     }
@@ -57,13 +57,13 @@ try {
   }
 } catch (error) {
   console.error('Firebase initialization failed:', error);
-  // During build time, don't throw error - set app to null instead
-  if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
-    console.log('Build-time Firebase initialization failed, continuing without Firebase');
-    app = null;
-  } else {
-  throw error;
-  }
+        // During build time, don't throw error - set app to null instead
+        if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
+          console.log('Build-time Firebase initialization failed, continuing without Firebase');
+          app = null;
+        } else {
+          throw error;
+        }
 }
 
 // Initialize Firebase services with error handling
@@ -76,11 +76,11 @@ export const db = (() => {
     return getFirestore(app);
   } catch (error) {
     console.error('Firestore initialization failed:', error);
-    // During build time, don't throw error - return null instead
-    if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
-      console.log('Build-time Firestore initialization failed, returning null');
-      return null;
-    }
+          // During build time, don't throw error - return null instead
+          if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
+            console.log('Build-time Firestore initialization failed, returning null');
+            return null;
+          }
     throw error;
   }
 })();
@@ -94,11 +94,11 @@ export const auth = (() => {
     return getAuth(app);
   } catch (error) {
     console.error('Auth initialization failed:', error);
-    // During build time, don't throw error - return null instead
-    if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
-      console.log('Build-time Auth initialization failed, returning null');
-      return null;
-    }
+          // During build time, don't throw error - return null instead
+          if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
+            console.log('Build-time Auth initialization failed, returning null');
+            return null;
+          }
     throw error;
   }
 })();
