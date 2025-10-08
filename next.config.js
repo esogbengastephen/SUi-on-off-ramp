@@ -43,7 +43,7 @@ const nextConfig = {
   },
   
   // Configure build output for better deployment
-  output: 'standalone',
+  // output: 'standalone', // Removed to fix static generation issues
   
   // Disable image optimization during build to prevent timeouts
   images: {
