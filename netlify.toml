@@ -22,10 +22,5 @@
 [build.processing.html]
   pretty_urls = true
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
 [functions]
   node_bundler = "esbuild"

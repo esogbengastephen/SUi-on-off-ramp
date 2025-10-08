@@ -40,10 +40,6 @@ const nextConfig = {
   experimental: {
     // Increase timeout for static page generation
     staticPageGenerationTimeout: 1000,
-    // Disable static optimization for problematic pages
-    staticGenerationRetryCount: 0,
-    // Disable static optimization during build
-    staticGenerationAsyncStorage: false,
   },
   
   // Configure build output for better deployment
@@ -59,12 +55,6 @@ const nextConfig = {
   
   // Disable source maps in production for faster builds
   productionBrowserSourceMaps: false,
-  
-  // Disable static optimization for pages that might cause issues
-  generateStaticParams: false,
-  
-  // Disable static optimization for all pages during build
-  staticGenerationRetryCount: 0,
 };
 
 module.exports = nextConfig;
