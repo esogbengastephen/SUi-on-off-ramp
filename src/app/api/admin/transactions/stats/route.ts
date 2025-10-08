@@ -5,6 +5,21 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🚀 TRANSACTION STATS: Fetching transaction statistics');
     
+    // Check if Firebase Admin is available
+    if (!adminDb) {
+      return NextResponse.json({
+        success: true,
+        stats: {
+          totalTransactions: 0,
+          pendingTransactions: 0,
+          completedTransactions: 0,
+          failedTransactions: 0,
+          dailyVolume: 0,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+    }
+    
     // Get all transactions from Firebase
     const transactionsSnapshot = await adminDb.collection('transactions').get();
     

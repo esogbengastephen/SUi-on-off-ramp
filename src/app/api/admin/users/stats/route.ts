@@ -5,6 +5,22 @@ export async function GET(request: NextRequest) {
   try {
     console.log('🚀 USER STATS: Fetching user statistics');
     
+    // Check if Firebase Admin is available
+    if (!adminDb) {
+      return NextResponse.json({
+        success: true,
+        stats: {
+          totalUsers: 0,
+          activeUsers: 0,
+          verifiedUsers: 0,
+          pendingUsers: 0,
+          emailVerifiedUsers: 0,
+          unverifiedUsers: 0,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+    }
+    
     // Get all users from Firebase
     const usersSnapshot = await adminDb.collection('users').get();
     
