@@ -13,6 +13,20 @@ import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 
 export default function AdminDashboard() {
+  // During build time, render a simple placeholder to avoid wallet context issues
+  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white">
+        <div className="text-center max-w-md mx-auto px-6">
+          <h1 className="text-4xl font-bold mb-4 opacity-90">Admin Dashboard</h1>
+          <p className="text-xl mb-8 opacity-80">
+            Admin dashboard will be available at runtime.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const { currentWallet } = useCurrentWallet()
   const {
     confirmOnRampPayment,
