@@ -21,17 +21,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // During build time, render minimal layout to avoid Html import issues
-  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
-    return (
-      <html lang="en">
-        <body className="antialiased">
-          {children}
-        </body>
-      </html>
-    );
-  }
-
   return (
     <html lang="en">
       <head>

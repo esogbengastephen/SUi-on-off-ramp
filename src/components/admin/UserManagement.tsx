@@ -5,439 +5,634 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useRealDashboardData } from "@/hooks/useRealDashboardData";
-import { useUserList, User } from "@/hooks/useUserList";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useUserProfiles } from "@/hooks/useFirebaseAdmin";
+import { useCurrentWallet } from "@mysten/dapp-kit";
 import { toast } from "sonner";
 import { 
   Users, 
+  Search, 
+  Filter, 
   UserCheck, 
   UserX, 
+  Shield, 
+  AlertTriangle,
+  Eye,
+  Edit,
+  Ban,
+  CheckCircle,
+  XCircle,
   Clock,
-  Search,
-  Filter,
-  RefreshCw,
+  DollarSign,
+  TrendingUp,
+  Activity,
+  Calendar,
   Mail,
   Phone,
-  Calendar,
-  Shield,
-  Activity,
-  Eye
+  Wallet,
+  CreditCard
 } from "lucide-react";
 
-export default function UserManagement() {
-  const { userData, refresh: refreshRealData } = useRealDashboardData();
-  const { data: userListData, loading: userListLoading, refreshUserList } = useUserList();
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
+// User Profile Card Component
+interface UserProfileCardProps {
+  user: any;
+  onBlock: (userId: string, reason: string) => void;
+  onUnblock: (userId: string) => void;
+  onUpdateLimits: (userId: string, limits: any) => void;
+  onViewDetails: (userId: string) => void;
+}
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await Promise.all([
-        refreshRealData(),
-        refreshUserList(currentPage, 10, searchTerm, filterStatus)
-      ]);
-      toast.success('User data refreshed successfully');
-    } catch (error) {
-      toast.error('Failed to refresh user data');
-    } finally {
-      setRefreshing(false);
+function UserProfileCard({ user, onBlock, onUnblock, onUpdateLimits, onViewDetails }: UserProfileCardProps) {
+  const [showBlockDialog, setShowBlockDialog] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
+  const [showLimitsDialog, setShowLimitsDialog] = useState(false);
+  const [limits, setLimits] = useState(user.transactionLimits || {});
+
+  const getKycStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'verified': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'rejected': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'expired': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      default: return 'bg-slate-500/20 text-slate-400 border-slate-500/30';
     }
   };
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-    refreshUserList(1, 10, value, filterStatus);
+  const getRiskScoreColor = (score: number) => {
+    if (score >= 80) return 'text-red-400';
+    if (score >= 60) return 'text-orange-400';
+    if (score >= 40) return 'text-yellow-400';
+    return 'text-green-400';
   };
 
-  const handleFilterChange = (value: string) => {
-    setFilterStatus(value);
-    setCurrentPage(1);
-    refreshUserList(1, 10, searchTerm, value);
+  const handleBlock = () => {
+    if (!blockReason.trim()) {
+      toast.error('Please provide a reason for blocking');
+      return;
+    }
+    onBlock(user.id, blockReason);
+    setShowBlockDialog(false);
+    setBlockReason("");
   };
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    refreshUserList(page, 10, searchTerm, filterStatus);
+  const handleUpdateLimits = () => {
+    onUpdateLimits(user.id, limits);
+    setShowLimitsDialog(false);
   };
 
-  const formatLastActivity = (lastLoginAt: Date | null) => {
-    if (!lastLoginAt) return 'Never';
+  return (
+    <>
+      <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm hover:bg-slate-800/70 transition-all duration-300">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-white font-semibold">
+                  {user.walletAddress?.slice(0, 8)}...{user.walletAddress?.slice(-6)}
+                </h3>
+                <p className="text-slate-400 text-sm">
+                  {user.email || 'No email provided'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge className={getKycStatusColor(user.kycStatus)}>
+                {user.kycStatus || 'Unknown'}
+              </Badge>
+              {user.isBlocked && (
+                <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                  Blocked
+                </Badge>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* User Stats */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-700/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <Activity className="h-4 w-4 text-blue-400" />
+                <p className="text-slate-400 text-xs">Transactions</p>
+              </div>
+              <p className="text-white font-semibold">{user.totalTransactions || 0}</p>
+            </div>
+            <div className="bg-slate-700/30 rounded-lg p-3">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-4 w-4 text-green-400" />
+                <p className="text-slate-400 text-xs">Volume</p>
+              </div>
+              <p className="text-white font-semibold">₦{(user.totalVolume || 0).toLocaleString()}</p>
+            </div>
+          </div>
+
+          {/* Risk Score */}
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-sm">Risk Score</span>
+            <div className="flex items-center space-x-2">
+              <div className="w-16 bg-slate-700 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    user.riskScore >= 80 ? 'bg-red-400' :
+                    user.riskScore >= 60 ? 'bg-orange-400' :
+                    user.riskScore >= 40 ? 'bg-yellow-400' :
+                    'bg-green-400'
+                  }`}
+                  style={{ width: `${user.riskScore || 0}%` }}
+                />
+              </div>
+              <span className={`text-sm font-semibold ${getRiskScoreColor(user.riskScore || 0)}`}>
+                {user.riskScore || 0}%
+              </span>
+            </div>
+          </div>
+
+          {/* Transaction Limits */}
+          <div className="space-y-2">
+            <p className="text-slate-300 text-sm font-medium">Transaction Limits</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-slate-400">Daily</p>
+                <p className="text-slate-300">₦{(user.transactionLimits?.dailyLimit || 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-slate-400">Per Transaction</p>
+                <p className="text-slate-300">₦{(user.transactionLimits?.perTransactionLimit || 0).toLocaleString()}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Last Activity */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-slate-400">Last Activity</span>
+            <span className="text-slate-300">
+              {user.lastActivityAt ? user.lastActivityAt.toLocaleDateString() : 'Never'}
+            </span>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex space-x-2 pt-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => onViewDetails(user.id)}
+              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              View
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowLimitsDialog(true)}
+              className="flex-1 border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Limits
+            </Button>
+            {user.isBlocked ? (
+              <Button
+                size="sm"
+                onClick={() => onUnblock(user.id)}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <CheckCircle className="h-4 w-4 mr-1" />
+                Unblock
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => setShowBlockDialog(true)}
+                className="flex-1"
+              >
+                <Ban className="h-4 w-4 mr-1" />
+                Block
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Block User Dialog */}
+      {showBlockDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="bg-slate-800 border-slate-700 w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <Ban className="h-5 w-5 text-red-400" />
+                <span>Block User</span>
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                Provide a reason for blocking this user
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="blockReason" className="text-slate-300">Reason</Label>
+                <Input
+                  id="blockReason"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  placeholder="e.g., Suspicious activity, Policy violation"
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBlockDialog(false)}
+                  className="flex-1 border-slate-600 text-slate-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleBlock}
+                  className="flex-1"
+                >
+                  Block User
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Update Limits Dialog */}
+      {showLimitsDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="bg-slate-800 border-slate-700 w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-2">
+                <CreditCard className="h-5 w-5 text-blue-400" />
+                <span>Update Transaction Limits</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-slate-300">Daily Limit (₦)</Label>
+                <Input
+                  type="number"
+                  value={limits.dailyLimit || ''}
+                  onChange={(e) => setLimits({...limits, dailyLimit: parseInt(e.target.value) || 0})}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Weekly Limit (₦)</Label>
+                <Input
+                  type="number"
+                  value={limits.weeklyLimit || ''}
+                  onChange={(e) => setLimits({...limits, weeklyLimit: parseInt(e.target.value) || 0})}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-slate-300">Per Transaction Limit (₦)</Label>
+                <Input
+                  type="number"
+                  value={limits.perTransactionLimit || ''}
+                  onChange={(e) => setLimits({...limits, perTransactionLimit: parseInt(e.target.value) || 0})}
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowLimitsDialog(false)}
+                  className="flex-1 border-slate-600 text-slate-300"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleUpdateLimits}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Update Limits
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </>
+  );
+}
+
+// User Details Modal Component
+interface UserDetailsModalProps {
+  user: any;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function UserDetailsModal({ user, isOpen, onClose }: UserDetailsModalProps) {
+  if (!isOpen || !user) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <Card className="bg-slate-800 border-slate-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white flex items-center space-x-2">
+              <Users className="h-5 w-5" />
+              <span>User Details</span>
+            </CardTitle>
+            <Button variant="ghost" onClick={onClose} className="text-slate-400">
+              <XCircle className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="profile" className="space-y-6">
+            <TabsList className="bg-slate-700/50">
+              <TabsTrigger value="profile">Profile</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+              <TabsTrigger value="kyc">KYC</TabsTrigger>
+              <TabsTrigger value="activity">Activity</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="profile" className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-slate-700/30 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg">Basic Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="text-slate-400">Wallet Address</Label>
+                      <p className="text-white font-mono text-sm">{user.walletAddress}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Email</Label>
+                      <p className="text-white">{user.email || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Phone</Label>
+                      <p className="text-white">{user.phone || 'Not provided'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Referral Code</Label>
+                      <p className="text-white">{user.referralCode || 'None'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Referred By</Label>
+                      <p className="text-white">{user.referredBy || 'Direct signup'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-slate-700/30 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-white text-lg">Account Status</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label className="text-slate-400">KYC Status</Label>
+                      <Badge className={`ml-2 ${
+                        user.kycStatus === 'VERIFIED' ? 'bg-green-500/20 text-green-400' :
+                        user.kycStatus === 'PENDING' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-red-500/20 text-red-400'
+                      }`}>
+                        {user.kycStatus}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Account Status</Label>
+                      <Badge className={`ml-2 ${user.isBlocked ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}>
+                        {user.isBlocked ? 'Blocked' : 'Active'}
+                      </Badge>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Risk Score</Label>
+                      <p className="text-white">{user.riskScore || 0}%</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Member Since</Label>
+                      <p className="text-white">{user.createdAt?.toLocaleDateString()}</p>
+                    </div>
+                    <div>
+                      <Label className="text-slate-400">Last Activity</Label>
+                      <p className="text-white">{user.lastActivityAt?.toLocaleDateString() || 'Never'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="transactions">
+              <Card className="bg-slate-700/30 border-slate-600">
+                <CardHeader>
+                  <CardTitle className="text-white">Transaction History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-slate-400">
+                    Transaction history will be loaded here
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="kyc">
+              <Card className="bg-slate-700/30 border-slate-600">
+                <CardHeader>
+                  <CardTitle className="text-white">KYC Information</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-slate-400">
+                    KYC documents and verification status will be displayed here
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="activity">
+              <Card className="bg-slate-700/30 border-slate-600">
+                <CardHeader>
+                  <CardTitle className="text-white">User Activity Log</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-center py-8 text-slate-400">
+                    User activity timeline will be displayed here
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Main User Management Component
+export default function UserManagement() {
+  const { currentWallet } = useCurrentWallet();
+  const { profiles, loading, updateUserProfile, blockUser, unblockUser } = useUserProfiles();
+  
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [kycFilter, setKycFilter] = useState("all");
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [showUserDetails, setShowUserDetails] = useState(false);
+
+  // Filter users from real Firebase data
+  const filteredUsers = (profiles || []).filter(user => {
+    const searchMatch = searchTerm === "" || 
+      user.walletAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const now = new Date();
-    const diffMs = now.getTime() - lastLoginAt.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const statusMatch = statusFilter === "all" || 
+      (statusFilter === "active" && !user.isBlocked) ||
+      (statusFilter === "blocked" && user.isBlocked);
     
-    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    if (diffMinutes > 0) return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
-    return 'Just now';
+    const kycMatch = kycFilter === "all" || user.kycStatus.toLowerCase() === kycFilter.toLowerCase();
+    
+    return searchMatch && statusMatch && kycMatch;
+  });
+
+  const handleBlockUser = async (userId: string, reason: string) => {
+    try {
+      await blockUser(userId, reason, currentWallet?.accounts?.[0]?.address || '');
+      toast.success('User blocked successfully');
+    } catch (error) {
+      toast.error('Failed to block user');
+    }
+  };
+
+  const handleUnblockUser = async (userId: string) => {
+    try {
+      await unblockUser(userId, currentWallet?.accounts?.[0]?.address || '');
+      toast.success('User unblocked successfully');
+    } catch (error) {
+      toast.error('Failed to unblock user');
+    }
+  };
+
+  const handleUpdateLimits = async (userId: string, limits: any) => {
+    try {
+      await updateUserProfile(userId, { transactionLimits: limits }, currentWallet?.accounts?.[0]?.address || '');
+      toast.success('Transaction limits updated successfully');
+    } catch (error) {
+      toast.error('Failed to update transaction limits');
+    }
+  };
+
+  const handleViewDetails = (userId: string) => {
+    const user = profiles?.find(u => u.id === userId);
+    setSelectedUser(user);
+    setShowUserDetails(true);
   };
 
   return (
     <div className="space-y-8">
-      {/* User Overview Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm font-medium">Total Users</p>
-                  <p className="text-white text-2xl font-bold">{userData.totalUsers}</p>
-                </div>
-              </div>
+      {/* User Management Header */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white">User Management</h2>
+          <p className="text-slate-400">Manage user profiles, KYC status, and transaction limits</p>
+        </div>
+        
+          {/* User Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-white">{profiles?.length || 0}</p>
+              <p className="text-slate-400 text-sm">Total Users</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600">
-                  <Activity className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm font-medium">Active Users</p>
-                  <p className="text-white text-2xl font-bold">{userData.activeUsers}</p>
-                </div>
-              </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-green-400">{profiles?.filter(u => !u.isBlocked).length || 0}</p>
+              <p className="text-slate-400 text-sm">Active</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600">
-                  <UserCheck className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm font-medium">Verified Users</p>
-                  <p className="text-white text-2xl font-bold">{userData.verifiedUsers}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="p-3 rounded-xl bg-gradient-to-r from-orange-500 to-red-600">
-                  <Clock className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-slate-400 text-sm font-medium">Pending Users</p>
-                  <p className="text-white text-2xl font-bold">{userData.pendingUsers}</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* User Management Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* User Search and Filters */}
-        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center space-x-2">
-              <Search className="h-5 w-5" />
-              <span>User Search</span>
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Search and filter users by various criteria
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Input
-                placeholder="Search by email, name, or wallet address..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder-slate-400"
-              />
-            </div>
-            <div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Users</SelectItem>
-                  <SelectItem value="active">Active Users</SelectItem>
-                  <SelectItem value="verified">Verified Users</SelectItem>
-                  <SelectItem value="pending">Pending Users</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button 
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-              Refresh User Data
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* User Statistics */}
-        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center space-x-2">
-              <Shield className="h-5 w-5" />
-              <span>User Statistics</span>
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Real-time user activity and verification status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg">
-                <span className="text-slate-300">Verification Rate</span>
-                <Badge className="bg-green-500 text-white">
-                  {userData.totalUsers > 0 ? ((userData.verifiedUsers / userData.totalUsers) * 100).toFixed(1) : 0}%
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg">
-                <span className="text-slate-300">Activity Rate</span>
-                <Badge className="bg-blue-500 text-white">
-                  {userData.totalUsers > 0 ? ((userData.activeUsers / userData.totalUsers) * 100).toFixed(1) : 0}%
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg">
-                <span className="text-slate-300">Pending Rate</span>
-                <Badge className="bg-orange-500 text-white">
-                  {userData.totalUsers > 0 ? ((userData.pendingUsers / userData.totalUsers) * 100).toFixed(1) : 0}%
-                </Badge>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-slate-700/30 rounded-lg">
-                <span className="text-slate-300">Last Updated</span>
-                <span className="text-slate-400 text-sm">
-                  {userData.lastUpdated.toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* User List */}
-      <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle className="text-white">User List</CardTitle>
-              <CardDescription className="text-slate-400">
-                Manage users, verification status, and account settings
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                variant="outline"
-                size="sm"
-                className="border-slate-600 text-slate-300"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-red-400">{profiles?.filter(u => u.isBlocked).length || 0}</p>
+              <p className="text-slate-400 text-sm">Blocked</p>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Search and Filter Controls */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search users by email, wallet address..."
-                  value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  className="pl-10 bg-slate-700 border-slate-600 text-white"
-                />
-              </div>
+      </div>
+
+      {/* Filters and Search */}
+      <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Search by wallet address or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-slate-700 border-slate-600 text-white"
+              />
             </div>
-            <Select value={filterStatus} onValueChange={handleFilterChange}>
-              <SelectTrigger className="w-full sm:w-48 bg-slate-700 border-slate-600 text-white">
-                <SelectValue placeholder="Filter by status" />
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
-                <SelectItem value="all">All Users</SelectItem>
+              <SelectContent className="bg-slate-700 border-slate-600">
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={kycFilter} onValueChange={setKycFilter}>
+              <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                <SelectValue placeholder="KYC Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-700 border-slate-600">
+                <SelectItem value="all">All KYC</SelectItem>
                 <SelectItem value="verified">Verified</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
+                <SelectItem value="rejected">Rejected</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {/* User Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-700">
-                  <th className="text-left py-3 px-4 text-slate-300 font-medium">User</th>
-                  <th className="text-left py-3 px-4 text-slate-300 font-medium">Status</th>
-                  <th className="text-left py-3 px-4 text-slate-300 font-medium">Email Status</th>
-                  <th className="text-left py-3 px-4 text-slate-300 font-medium">Activity</th>
-                  <th className="text-left py-3 px-4 text-slate-300 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {userListLoading ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center">
-                      <div className="flex items-center justify-center">
-                        <RefreshCw className="h-6 w-6 animate-spin text-blue-400 mr-2" />
-                        <span className="text-slate-400">Loading users...</span>
-                      </div>
-                    </td>
-                  </tr>
-                ) : userListData?.users.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center">
-                      <div className="text-slate-400">
-                        <Users className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p>No users found</p>
-                        <p className="text-sm">Try adjusting your search or filter criteria</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  userListData?.users.map((user: User) => {
-                    const isActive = user.lastLoginAt && 
-                      (Date.now() - user.lastLoginAt.getTime()) < 7 * 24 * 60 * 60 * 1000;
-                    
-                    return (
-                      <tr key={user.id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
-                        <td className="py-4 px-4">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                              <Users className="h-4 w-4 text-white" />
-                            </div>
-                            <div>
-                              <div className="text-white font-medium">
-                                {user.email}
-                              </div>
-                              <div className="text-slate-400 text-sm">
-                                {user.walletAddress.slice(0, 8)}...{user.walletAddress.slice(-6)}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <Badge 
-                            variant={isActive ? "default" : "secondary"}
-                            className={isActive ? "bg-green-500" : "bg-slate-500"}
-                          >
-                            {isActive ? "Active" : "Inactive"}
-                          </Badge>
-                        </td>
-                        <td className="py-4 px-4">
-                          <Badge 
-                            variant={user.isEmailVerified ? "default" : "secondary"}
-                            className={user.isEmailVerified ? "bg-green-500" : "bg-slate-500"}
-                          >
-                            {user.isEmailVerified ? "Verified ✓" : "Pending"}
-                          </Badge>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="text-slate-300 text-sm">
-                            {formatLastActivity(user.lastLoginAt)}
-                          </div>
-                        </td>
-                        <td className="py-4 px-4">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                            >
-                              <Eye className="h-3 w-3 mr-1" />
-                              View
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                            >
-                              <Mail className="h-3 w-3 mr-1" />
-                              Email
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-                            >
-                              <Shield className="h-3 w-3 mr-1" />
-                              Verify
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-700">
-            <div className="text-slate-400 text-sm">
-              {userListData ? (
-                <>
-                  Showing {((userListData.pagination.currentPage - 1) * userListData.pagination.limit) + 1}-
-                  {Math.min(userListData.pagination.currentPage * userListData.pagination.limit, userListData.pagination.totalUsers)} of {userListData.pagination.totalUsers} users
-                </>
-              ) : (
-                'Loading...'
-              )}
-            </div>
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!userListData?.pagination.hasPrevPage}
-                onClick={() => handlePageChange(currentPage - 1)}
-                className="border-slate-600 text-slate-300 hover:bg-slate-700 disabled:text-slate-400"
-              >
-                Previous
-              </Button>
-              <span className="text-slate-400 text-sm px-2">
-                Page {userListData?.pagination.currentPage || 1} of {userListData?.pagination.totalPages || 1}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!userListData?.pagination.hasNextPage}
-                onClick={() => handlePageChange(currentPage + 1)}
-                className="border-slate-600 text-slate-300 hover:bg-slate-700 disabled:text-slate-400"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
         </CardContent>
       </Card>
+
+      {/* User Grid */}
+      {loading ? (
+        <div className="text-center py-8 text-slate-400">Loading users...</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredUsers.map((user) => (
+            <UserProfileCard
+              key={user.id}
+              user={user}
+              onBlock={handleBlockUser}
+              onUnblock={handleUnblockUser}
+              onUpdateLimits={handleUpdateLimits}
+              onViewDetails={handleViewDetails}
+            />
+          ))}
+        </div>
+      )}
+
+      {filteredUsers.length === 0 && !loading && (
+        <Card className="bg-slate-800/50 border-slate-700 backdrop-blur-sm">
+          <CardContent className="text-center py-12">
+            <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+            <h3 className="text-white text-lg font-semibold mb-2">No Users Found</h3>
+            <p className="text-slate-400">No users match your current filters</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* User Details Modal */}
+      <UserDetailsModal
+        user={selectedUser}
+        isOpen={showUserDetails}
+        onClose={() => {
+          setShowUserDetails(false);
+          setSelectedUser(null);
+        }}
+      />
     </div>
   );
 }

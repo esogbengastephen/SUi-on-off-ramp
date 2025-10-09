@@ -5,15 +5,6 @@ import { sendVerificationEmail } from '@/lib/email-service';
 
 export async function POST(request: NextRequest) {
   try {
-    // During build time, return success to avoid Firebase issues
-    if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
-      return NextResponse.json({
-        success: true,
-        message: 'Build-time response - email service not available',
-        timestamp: new Date().toISOString()
-      });
-    }
-
     const { email, code, type = 'signup_verification' } = await request.json();
 
     if (!email || !code) {

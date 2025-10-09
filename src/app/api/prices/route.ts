@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
 import { TOKEN_CONFIG, TokenSymbol } from '@/lib/price-service'
-import { handleBuildTimeCheck } from '@/lib/build-time-utils'
 
 // Cache for storing price data
 const priceCache = new Map<string, { data: any; timestamp: number }>()
@@ -15,19 +14,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid token symbol' }, { status: 400 })
   }
 
-  // Build-time check
-  const buildTimeResponse = handleBuildTimeCheck({
-    symbol: tokenSymbol,
-    price: tokenSymbol === 'SUI' ? 3000 : 1500,
-    change24h: 0,
-    lastUpdated: Date.now(),
-    source: 'build-time-fallback'
-  });
-  
-  if (buildTimeResponse) {
-    return NextResponse.json(buildTimeResponse);
-  }
-
   try {
     // Check cache first
     const cacheKey = `price_${tokenSymbol}`
@@ -37,7 +23,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(cached.data)
     }
 
-    // Try CoinMarketCap first with shorter timeout
+    // Try CoinMarketCap first
     let priceData = null
     
     try {
@@ -45,12 +31,7 @@ export async function GET(request: NextRequest) {
     } catch (error) {
       console.log('CoinMarketCap failed, trying CoinGecko fallback...')
       // Fallback to CoinGecko
-      try {
-        priceData = await fetchFromCoinGecko(tokenSymbol)
-      } catch (fallbackError) {
-        console.log('Both APIs failed, using fallback data')
-        priceData = null
-      }
+      priceData = await fetchFromCoinGecko(tokenSymbol)
     }
 
     if (priceData) {
@@ -120,7 +101,7 @@ async function fetchFromCoinMarketCap(tokenSymbol: TokenSymbol) {
       id: tokenConfig.coinmarketcapId,
       convert: 'NGN'
     },
-    timeout: 2000
+    timeout: 5000
   })
 
   if (response.data?.data?.[tokenConfig.coinmarketcapId]) {
@@ -149,7 +130,7 @@ async function fetchFromCoinGecko(tokenSymbol: TokenSymbol) {
       vs_currencies: 'ngn',
       include_24hr_change: true
     },
-    timeout: 2000
+    timeout: 5000
   })
 
   if (response.data?.[tokenConfig.coingeckoId]) {

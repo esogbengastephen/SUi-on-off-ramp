@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 // CoinMarketCap API configuration
 const CMC_API_KEY = process.env.COINMARKETCAP_API_KEY || 'your-api-key-here';
@@ -26,28 +28,6 @@ export async function GET(
   { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    // During build time, return fallback data immediately to avoid Firebase issues
-    if (process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true') {
-      const { token } = await params;
-      const tokenLower = token.toLowerCase();
-      
-      const fallbackPrices = {
-        sui: { price: 3000, change24h: 0 },
-        usdc: { price: 1500, change24h: 0 },
-        usdt: { price: 1500, change24h: 0 }
-      };
-
-      const fallbackData = {
-        symbol: tokenLower.toUpperCase(),
-        price: fallbackPrices[tokenLower as keyof typeof fallbackPrices]?.price || 1000,
-        change24h: 0,
-        lastUpdated: Date.now(),
-        source: 'build-time-fallback'
-      };
-
-      return NextResponse.json(fallbackData);
-    }
-
     const { token } = await params;
     const tokenLower = token.toLowerCase();
     
@@ -62,15 +42,11 @@ export async function GET(
     const url = new URL(request.url);
     const transactionType = url.searchParams.get('type'); // 'ON_RAMP' or 'OFF_RAMP'
     
-    // Check Firebase for price overrides (only if Firebase is available)
+    // Check Firebase for price overrides
     let overridePrice = null;
     let overrideSource = null;
     
     try {
-      // Dynamic import to avoid build-time issues
-      const { db } = await import('@/lib/firebase');
-      const { doc, getDoc } = await import('firebase/firestore');
-      
       const priceOverrideDoc = await getDoc(doc(db, 'systemSettings', 'priceOverrides'));
       if (priceOverrideDoc.exists()) {
         const overrides = priceOverrideDoc.data();

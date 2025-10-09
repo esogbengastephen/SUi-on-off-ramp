@@ -154,6 +154,8 @@ export interface UserProfile {
   walletAddress: string;
   email?: string;
   phone?: string;
+  kycStatus: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'EXPIRED';
+  kycData?: any;
   referralCode?: string;
   referredBy?: string;
   transactionLimits: UserLimits;

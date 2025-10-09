@@ -27,12 +27,6 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useFirebaseAuth();
 
   useEffect(() => {
-    // Skip Firebase initialization during build time
-    if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
-      setMigrationStatus('completed');
-      return;
-    }
-
     const initializeFirebase = async () => {
       try {
         // Check Firebase connection

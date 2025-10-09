@@ -15,6 +15,8 @@ export interface FirebaseUser {
   email: string | null;
   walletAddress?: string;
   role?: 'user' | 'admin';
+  kycStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  kycData?: any;
   
   // Email Verification
   isEmailVerified?: boolean;
@@ -298,6 +300,9 @@ export function useFirebaseAuth() {
     return user?.role === 'admin';
   };
 
+  const isKycVerified = () => {
+    return user?.kycStatus === 'VERIFIED';
+  };
 
   // Email verification functions
   const verifyEmailCode = async (code: string) => {
@@ -610,6 +615,7 @@ export function useFirebaseAuth() {
     updateUserProfile,
     linkWallet,
     isAdmin,
+    isKycVerified,
     verifyEmailCode,
     resendVerificationCode,
     validateReferralCode

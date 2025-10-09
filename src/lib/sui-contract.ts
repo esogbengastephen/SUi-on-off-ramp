@@ -3,7 +3,7 @@ import { Transaction } from '@mysten/sui/transactions'
 
 // Contract configuration
 export const CONTRACT_CONFIG = {
-  packageId: process.env.NEXT_PUBLIC_SUI_CONTRACT_PACKAGE_ID || process.env.NEXT_PUBLIC_SUI_PACKAGE_ID || '0x0',
+  packageId: process.env.NEXT_PUBLIC_SUI_CONTRACT_PACKAGE_ID || '',
   moduleName: 'swap',
   network: 'testnet' as const,
 }
