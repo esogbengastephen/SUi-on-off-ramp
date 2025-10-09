@@ -22,7 +22,7 @@ interface WalletProviderProps {
 
 export function SuiWalletProvider({ children }: WalletProviderProps) {
   // During build time, render children without wallet providers to avoid SSR issues
-  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true') {
+  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
     return <>{children}</>;
   }
 

@@ -33,7 +33,7 @@ export function ThemeProvider({
   storageKey = 'switcherfi-theme'
 }: ThemeProviderProps) {
   // During build time, render children without theme context to avoid SSR issues
-  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true') {
+  if (process.env.BUILD_TIME === 'true' || process.env.NETLIFY === 'true' || process.env.VERCEL === 'true') {
     return <>{children}</>;
   }
 
