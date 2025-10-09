@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { useCurrentWallet, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { toast } from 'sonner';
-import { suiSwapContract } from '../lib/sui-contract';
+import { suiSwapContract } from '@/lib/sui-contract';
 
 export interface TokenCreditingResult {
   success: boolean;
